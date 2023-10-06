@@ -2,12 +2,15 @@ from flask import Blueprint, request
 from app.models import User
 from app import session
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_cors import cross_origin
+from uuid import uuid4
 
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 
 @bp.route('/register', methods=['POST'])
+@cross_origin()
 def register():
     # Collect username and password
     username = request.form.get('username')
@@ -23,13 +26,17 @@ def register():
         return {'msg': 'User already exists!'}, 409
     # Create new user
     hashed_passwd = generate_password_hash(password)
-    user = User(username=username, password=hashed_passwd)
+    user = User(
+        uuid=str(uuid4()),
+        username=username,
+        password=hashed_passwd)
     session.add(user)
     session.commit()
     return {'msg': 'User successfully created!'}, 200
 
 
 @bp.route('/login', methods=['POST'])
+@cross_origin()
 def login():
     # Collect data
     username = request.form.get('username')

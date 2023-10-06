@@ -1,9 +1,10 @@
 from flask import Flask
+from flask_cors import CORS
 
 
 app = Flask(__name__)
 db = 'sqlite:///app.db'
-
+cors = CORS(app, resources={r"/*": {"origins": []}})
 
 from app.models import Base
 from sqlalchemy import create_engine
