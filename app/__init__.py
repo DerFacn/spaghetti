@@ -17,5 +17,9 @@ Base.session = session.query_property()
 
 
 @app.teardown_appcontext
-def shutdown_session():
+def shutdown_session(extension=None):
     session.remove()
+
+
+from app import auth
+app.register_blueprint(auth.bp)
