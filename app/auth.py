@@ -1,9 +1,11 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, make_response
 from app.models import User
 from app import session
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import cross_origin
 from uuid import uuid4
+from flask_jwt_extended import create_access_token, create_refresh_token, unset_jwt_cookies, jwt_required, \
+    get_jwt_identity
 
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -52,4 +54,36 @@ def login():
         return {'msg': 'User with this username don\'t exists'}, 401
     if not check_password_hash(user.password, password):
         return {'msg': 'Wrong password!'}, 401
-    return {'msg': 'Authorised!'}, 200
+    # Create tokens for authentication
+    access_token = create_access_token(identity=user.uuid)
+    refresh_token = create_refresh_token(identity=user.uuid)
+    response = make_response('Authorized!', 200)
+    response.set_cookie('access_token_cookie', access_token, secure=True, httponly=True, path='/')
+    response.set_cookie('refresh_token_cookie', refresh_token, secure=True, httponly=True, path='/auth/refresh')
+    # Return successful response with tokens to user
+    return response
+
+
+@bp.route('/refresh', methods=['POST'])
+@cross_origin()
+@jwt_required()
+def refresh():
+    # If user authorized it must get user identity
+    user_identity = get_jwt_identity()
+    # Create new tokens for this user
+    access_token = create_access_token(identity=user_identity)
+    refresh_token = create_refresh_token(identity=user_identity)
+    response = make_response('', 200)
+    response.set_cookie('access_token_cookie', access_token, secure=True, httponly=True, path='/')
+    response.set_cookie('refresh_token_cookie', refresh_token, secure=True, httponly=True, path='/auth/refresh')
+    # And send these refreshed new tokens to user
+    return response
+
+
+@bp.route('/logout')
+@cross_origin()
+@jwt_required()
+def logout():
+    response = make_response()
+    unset_jwt_cookies(response)
+    return response

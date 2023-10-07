@@ -1,10 +1,14 @@
 from flask import Flask
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
+from app.config import Config
 
 
 app = Flask(__name__)
+app.config.from_object(Config)
 db = 'sqlite:///app.db'
 cors = CORS(app, resources={r"/*": {"origins": []}})
+jwt = JWTManager(app)
 
 from app.models import Base
 from sqlalchemy import create_engine
